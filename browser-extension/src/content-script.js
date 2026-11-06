@@ -38,6 +38,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === 'OPENBROWSER_EXPORT_LAST_RESPONSE') {
+    const content = extractLatestAssistantResponse();
+    sendResponse?.(content
+      ? { content, title: content.slice(0, 100).replace(/\\s+/g, ' ') }
+      : { error: 'No assistant response found on this page.' });
+    return false;
+  }
+
   if (message?.type === 'OPENBROWSER_RUN_JOB') {
     void handleIncomingJob(message.job)
       .then(() => sendResponse?.({ ok: true }))
@@ -64,6 +72,24 @@ window.addEventListener('message', (event) => {
   }
   handleApiCaptureMessage(data);
 });
+
+
+function extractLatestAssistantResponse() {
+  const selectors = [
+    '[data-message-author-role="assistant"]',
+    '[data-testid^="conversation-turn-"] [data-message-author-role="assistant"]',
+    'main [data-testid*="conversation-turn"] .markdown',
+    'main .message-content',
+  ];
+  for (const selector of selectors) {
+    const nodes = [...document.querySelectorAll(selector)];
+    for (let index = nodes.length - 1; index >= 0; index -= 1) {
+      const text = (nodes[index].innerText ?? nodes[index].textContent ?? '').trim();
+      if (text.length >= 20) return text.slice(0, 100_000);
+    }
+  }
+  return '';
+}
 
 function beginApiCapture(mode, sessionId) {
   if (apiCapture?.timer) {
