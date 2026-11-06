@@ -406,6 +406,9 @@ function authenticate(request: FastifyRequest): void {
   }
 
   const token = process.env.BRIDGE_TOKEN;
+  if (url.startsWith('/local-agent/') && !token) {
+    throw new Error('BRIDGE_TOKEN must be configured to use the local-agent API');
+  }
   if (!token) {
     return;
   }
