@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { createLocalAgentTask, listLocalAgentTasks, claimLocalAgentTask, finishLocalAgentTask } from './local-agent-store.js';
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -82,6 +83,43 @@ export async function createBridgeServer(): Promise<FastifyInstance> {
 
   app.addHook('preHandler', async (request) => {
     authenticate(request);
+  });
+
+  app.post('/local-agent/tasks', async (request, reply) => {
+    const body = request.body as { content?: string; sourceUrl?: string; title?: string };
+    const content = typeof body.content === 'string' ? body.content.trim() : '';
+    if (!content) {
+      return reply.code(400).send({ error: 'content is required' });
+    }
+    if (content.length > 100_000) {
+      return reply.code(413).send({ error: 'content exceeds 100000 characters' });
+    }
+    const task = createLocalAgentTask({
+      content,
+      sourceUrl: typeof body.sourceUrl === 'string' ? body.sourceUrl.slice(0, 2048) : undefined,
+      title: typeof body.title === 'string' ? body.title.slice(0, 200) : undefined,
+    });
+    return reply.code(201).send({ task });
+  });
+
+  app.get('/local-agent/tasks', async () => ({ tasks: listLocalAgentTasks() }));
+
+  app.post('/local-agent/tasks/:taskId/claim', async (request, reply) => {
+    const { taskId } = request.params as { taskId: string };
+    const task = claimLocalAgentTask(taskId);
+    if (!task) return reply.code(409).send({ error: 'Task not found or already claimed' });
+    return { task };
+  });
+
+  app.post('/local-agent/tasks/:taskId/result', async (request, reply) => {
+    const { taskId } = request.params as { taskId: string };
+    const body = request.body as { status?: 'completed' | 'failed'; message?: string };
+    if (!body.status || !['completed', 'failed'].includes(body.status)) {
+      return reply.code(400).send({ error: 'status must be completed or failed' });
+    }
+    const task = finishLocalAgentTask(taskId, body.status, String(body.message ?? '').slice(0, 10_000));
+    if (!task) return reply.code(404).send({ error: 'Task not found' });
+    return { task };
   });
 
   app.get('/health', async () => ({ status: 'ok' }));
