@@ -129,3 +129,18 @@ button {
 button:hover {
   background: #30363d;
 }
+
+#bridge-token {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 6px 0 8px;
+  padding: 8px 9px;
+  border: 1px solid #30363d;
+  border-radius: 7px;
+  background: #0d1117;
+  color: #e8eaed;
+}
+#local-agent-card button + button { margin-top: 7px; }
+#send-local-agent { border-color: #238636; background: #173b2a; }
+#send-local-agent:hover { background: #1f5137; }
+button:disabled { opacity: .6; cursor: wait; }
