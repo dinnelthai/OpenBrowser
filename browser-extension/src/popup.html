@@ -41,6 +41,16 @@
         <div class="meta" id="tabs-summary">0 tabs</div>
       </section>
 
+      <section class="card" id="local-agent-card">
+        <div class="card-title">Local Agent</div>
+        <label class="meta" for="bridge-token">Bridge token (required)</label>
+        <input id="bridge-token" type="password" autocomplete="off" placeholder="Paste BRIDGE_TOKEN" />
+        <button id="save-token" type="button">Save Token</button>
+        <p class="meta">Send the latest assistant response from this AI tab to your local task inbox. Review it before executing anything.</p>
+        <button id="send-local-agent" type="button">Send latest response to local agent</button>
+        <div class="meta" id="local-agent-status" role="status"></div>
+      </section>
+
       <button id="check" type="button">Refresh Status</button>
     </main>
     <script type="module" src="./popup.js"></script>
