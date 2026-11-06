@@ -351,6 +351,36 @@ Or open `http://127.0.0.1:5000/health` in your browser.
 
 ---
 
+## Local Agent Handoff (ChatGPT → OpenMontage)
+
+OpenBrowser can send the latest assistant response from a supported AI chat tab into an authenticated local task inbox.
+
+1. Start the bridge from the OpenMontage project directory (or the directory where your local agent runs): `pnpm start server`.
+2. Set a strong `BRIDGE_TOKEN` in `.env` and restart the server.
+3. Load/reload the unpacked extension and open ChatGPT.
+4. Open the extension popup, paste the same `BRIDGE_TOKEN`, and save it.
+5. Click **Send latest response to local agent**. The extension extracts the latest assistant message and submits it to the local inbox.
+6. A local worker can list pending tasks, claim one, and report completion using the API below. Submission does not execute shell commands or modify project files.
+
+### Local Agent API
+
+All `/local-agent/*` routes require `Authorization: Bearer $BRIDGE_TOKEN`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/local-agent/tasks` | Create a task from an assistant response |
+| GET | `/local-agent/tasks` | List tasks (newest first) |
+| POST | `/local-agent/tasks/:taskId/claim` | Atomically claim a pending task |
+| POST | `/local-agent/tasks/:taskId/result` | Mark a claimed task completed or failed |
+
+Example:
+
+```bash
+curl -H "Authorization: Bearer $BRIDGE_TOKEN" http://127.0.0.1:5000/local-agent/tasks
+```
+
+The current task store is process-memory only and retains at most 100 tasks. Restarting the bridge clears the inbox. Persistent storage and a dedicated OpenMontage worker are intentionally separate follow-up work; do not treat task submission as proof that a local action has run.
+
 ## Browser Extension (Chrome)
 
 The extension watches supported AI chat pages, injects prompts, captures responses, and forwards them to the local bridge server.
